@@ -67,11 +67,15 @@ assert_code() {
 }
 
 section "0) OS and tool preflight (R1)"
+if [[ "$(uname -s)" != "Linux" ]]; then
+  fail "This validation script must run on Linux (Fedora/Nobara). Current host: $(uname -s)."
+fi
+
 if [[ -f /etc/os-release ]]; then
   . /etc/os-release
   echo "Detected OS: ${PRETTY_NAME:-unknown}"
 else
-  fail "Cannot detect OS release."
+  fail "Cannot detect /etc/os-release. This does not look like a standard Linux distro environment."
 fi
 
 if [[ "${ID:-}" != "fedora" && "${ID_LIKE:-}" != *"fedora"* && "${NAME:-}" != *"Nobara"* ]]; then
