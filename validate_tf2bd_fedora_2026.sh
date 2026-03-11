@@ -92,8 +92,9 @@ echo "Installing dependencies via dnf (non-fatal install step)..."
 sudo dnf -y install \
   gcc gcc-c++ clang \
   cmake ninja-build make pkgconf-pkg-config \
+  autoconf automake libtool perl \
   python3 python3-pip \
-  openssl-devel zlib-devel \
+  openssl-devel zlib-devel bzip2-devel sqlite-devel \
   mesa-libGL-devel mesa-libEGL-devel \
   libX11-devel libXrandr-devel libXi-devel libXinerama-devel libXcursor-devel \
   wayland-devel libxkbcommon-devel \
