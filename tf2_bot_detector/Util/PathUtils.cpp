@@ -96,7 +96,10 @@ DirectoryValidatorResult tf2_bot_detector::ValidateTFDir(std::filesystem::path p
 		if (!BasicDirChecks(result))
 			return result;
 
-		if (!ValidateFile(result, "../hl2.exe") ||
+		if (
+#ifdef _WIN32
+			!ValidateFile(result, "../hl2.exe") ||
+#endif
 			!ValidateFile(result, "tf2_misc_dir.vpk") ||
 			!ValidateFile(result, "tf2_sound_misc_dir.vpk") ||
 			!ValidateFile(result, "tf2_textures_dir.vpk") ||
@@ -125,12 +128,27 @@ DirectoryValidatorResult tf2_bot_detector::ValidateSteamDir(std::filesystem::pat
 		if (!BasicDirChecks(result))
 			return result;
 
-		if (!ValidateFile(result, "steam.exe") ||
+		const auto hasLinuxLauncher = std::filesystem::exists(result.m_Path / "steam.sh") ||
+			std::filesystem::exists(result.m_Path / "Steam.sh");
+
+		if (
+#ifdef _WIN32
+			!ValidateFile(result, "steam.exe") ||
 			!ValidateFile(result, "GameOverlayUI.exe") ||
 			!ValidateFile(result, "streaming_client.exe") ||
+#else
+			!hasLinuxLauncher ||
+#endif
 			!ValidateDirectory(result, "steamapps") ||
 			!ValidateDirectory(result, "config"))
 		{
+		#ifndef _WIN32
+			if (!hasLinuxLauncher)
+			{
+				result.m_Result = Result::InvalidContents;
+				result.m_Message = "Expected Steam launcher file steam.sh/Steam.sh does not exist";
+			}
+		#endif
 			return result;
 		}
 	}

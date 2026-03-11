@@ -1,6 +1,10 @@
 #pragma once
 
+#if __has_include("tf2_bot_detector_export.h")
 #include "tf2_bot_detector_export.h"
+#else
+#define TF2_BOT_DETECTOR_EXPORT
+#endif
 
 #ifdef WIN32
 #include <Windows.h>

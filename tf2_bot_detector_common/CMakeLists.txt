@@ -16,6 +16,10 @@ if (WIN32)
 	target_sources(tf2_bot_detector_common PRIVATE
 		"src/Platform/Windows/PlatformCommon.cpp"
 	)
+else()
+	target_sources(tf2_bot_detector_common PRIVATE
+		"src/Platform/Linux/PlatformCommon.cpp"
+	)
 endif()
 
 target_include_directories(tf2_bot_detector_common PUBLIC "include")

@@ -365,7 +365,11 @@ static bool InputPathValidatedOverride(const std::string_view& label_id, const s
 bool tf2_bot_detector::InputTextTFDirOverride(const std::string_view& label_id, std::filesystem::path& outPath,
 	const std::filesystem::path& autodetectedPath, bool requireValid)
 {
+	#ifdef _WIN32
 	static const std::filesystem::path s_ExamplePath("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf");
+	#else
+	static const std::filesystem::path s_ExamplePath("/home/user/.local/share/Steam/steamapps/common/Team Fortress 2/tf");
+	#endif
 	return InputPathValidatedOverride(label_id, "tf directory"sv, s_ExamplePath,
 		outPath, autodetectedPath, requireValid, &ValidateTFDir);
 }
@@ -373,7 +377,11 @@ bool tf2_bot_detector::InputTextTFDirOverride(const std::string_view& label_id, 
 bool tf2_bot_detector::InputTextSteamDirOverride(const std::string_view& label_id,
 	std::filesystem::path& outPath, bool requireValid)
 {
+	#ifdef _WIN32
 	static const std::filesystem::path s_ExamplePath("C:\\Program Files (x86)\\Steam");
+	#else
+	static const std::filesystem::path s_ExamplePath("/home/user/.local/share/Steam");
+	#endif
 	return InputPathValidatedOverride(label_id, "Steam directory"sv, s_ExamplePath, outPath,
 		GetCurrentSteamDir(), requireValid, &ValidateSteamDir);
 }

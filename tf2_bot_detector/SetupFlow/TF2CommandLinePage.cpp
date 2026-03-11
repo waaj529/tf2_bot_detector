@@ -13,6 +13,7 @@
 #include <vdf_parser.hpp>
 
 #include <chrono>
+#include <algorithm>
 #include <random>
 
 #undef DrawState
@@ -72,12 +73,20 @@ void TF2CommandLinePage::Data::TryUpdateCmdlineArgs()
 
 auto TF2CommandLinePage::ValidateSettings(const Settings& settings) const -> ValidateSettingsResult
 {
+	#ifndef _WIN32
+		if (!Processes::IsTF2Running())
+			return ValidateSettingsResult::TriggerOpen;
+		if (!m_Data.m_RCONSuccess)
+			return ValidateSettingsResult::TriggerOpen;
+		return ValidateSettingsResult::Success;
+	#else
 	if (!Processes::IsTF2Running())
 		return ValidateSettingsResult::TriggerOpen;
 	if (!m_Data.m_CommandLineArgs.has_value() || !m_Data.m_CommandLineArgs->IsPopulated())
 		return ValidateSettingsResult::TriggerOpen;
 
 	return ValidateSettingsResult::Success;
+	#endif
 }
 
 auto TF2CommandLinePage::TF2CommandLine::Parse(const std::string_view& cmdLine) -> TF2CommandLine
@@ -205,6 +214,7 @@ static std::string FindUserLaunchOptions(const Settings& settings)
 // Actually launch tf2 with the necessary command line args for tf2bd to communicate with it
 static void OpenTF2(const Settings& settings, const std::string_view& rconPassword, uint16_t rconPort)
 {
+	#ifdef _WIN32
 	const std::filesystem::path hl2Path = settings.GetTFDir() / ".." / "hl2.exe";
 
 	// TODO: scrub any conflicting alias or one-time-use commands from this
@@ -230,6 +240,9 @@ static void OpenTF2(const Settings& settings, const std::string_view& rconPasswo
 		;
 
 	Processes::Launch(hl2Path, args);
+	#else
+	throw std::logic_error("Direct TF2 launch is not supported on Linux in milestone 1");
+	#endif
 }
 
 TF2CommandLinePage::RCONClientData::RCONClientData(std::string pwd, uint16_t port) :
@@ -389,6 +402,58 @@ void TF2CommandLinePage::DrawCommandLineArgsInvalid(const DrawState& ds, const T
 
 auto TF2CommandLinePage::OnDraw(const DrawState& ds) -> OnDrawResult
 {
+	#ifndef _WIN32
+		m_IsAutoLaunchAllowed = false;
+
+		ImGui::TextFmt("On Linux, TF2 must be launched manually through Steam or Proton.");
+		ImGui::NewLine();
+		ImGui::TextFmt("Required TF2 launch options:");
+		ImGui::TextFmt("-condebug -conclearlog -usercon -rcon_password {} +hostport {}",
+			m_Data.m_ManualRCONPassword, m_Data.m_ManualRCONPort);
+		ImGui::NewLine();
+
+		bool resetConnection = false;
+		resetConnection = ImGui::InputText("RCON Password", &m_Data.m_ManualRCONPassword) || resetConnection;
+		int manualPort = m_Data.m_ManualRCONPort;
+		if (ImGui::InputInt("RCON Port", &manualPort))
+		{
+			manualPort = std::clamp(manualPort, 1, 65535);
+			m_Data.m_ManualRCONPort = static_cast<uint16_t>(manualPort);
+			resetConnection = true;
+		}
+
+		if (resetConnection)
+		{
+			m_Data.m_TestRCONClient.reset();
+			m_Data.m_RCONSuccess = false;
+		}
+
+		ImGui::NewLine();
+		if (!Platform::Processes::IsTF2Running())
+		{
+			ImGui::TextFmt({ 1, 1, 0, 1 }, "TF2 is not currently detected. Start TF2 manually, then test the RCON connection.");
+			return OnDrawResult::ContinueDrawing;
+		}
+
+		if (m_Data.m_ManualRCONPassword.empty())
+		{
+			ImGui::TextFmt({ 1, 0, 0, 1 }, "RCON password cannot be empty.");
+			return OnDrawResult::ContinueDrawing;
+		}
+
+		if (ImGui::Button("Test RCON Connection") || m_Data.m_TestRCONClient.has_value())
+		{
+			if (!m_Data.m_TestRCONClient)
+				m_Data.m_TestRCONClient.emplace(m_Data.m_ManualRCONPassword, m_Data.m_ManualRCONPort);
+
+			ImGui::NewLine();
+			m_Data.m_RCONSuccess = m_Data.m_TestRCONClient->Update();
+			if (m_Data.m_RCONSuccess)
+				return OnDrawResult::EndDrawing;
+		}
+
+		return OnDrawResult::ContinueDrawing;
+	#else
 	m_Data.TryUpdateCmdlineArgs();
 
 	if (!m_Data.m_CommandLineArgs.has_value())
@@ -439,11 +504,13 @@ auto TF2CommandLinePage::OnDraw(const DrawState& ds) -> OnDrawResult
 	}
 
 	return OnDrawResult::ContinueDrawing;
+	#endif
 }
 
 void TF2CommandLinePage::Init(const InitState& is)
 {
 	m_Data = {};
+	m_Data.m_ManualRCONPassword = GenerateRandomRCONPassword();
 }
 
 void TF2CommandLinePage::Commit(const CommitState& cs)

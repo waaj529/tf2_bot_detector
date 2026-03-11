@@ -19,7 +19,11 @@ namespace
 	public:
 		ValidateSettingsResult ValidateSettings(const Settings& settings) const override
 		{
+		#ifdef _WIN32
 			return Processes::IsProcessRunning("faceitservice.exe") ? ValidateSettingsResult::TriggerOpen : ValidateSettingsResult::Success;
+		#else
+			return ValidateSettingsResult::Success;
+		#endif
 		}
 
 		OnDrawResult OnDraw(const DrawState& ds) override

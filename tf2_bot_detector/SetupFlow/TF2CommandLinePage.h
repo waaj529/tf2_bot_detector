@@ -80,6 +80,8 @@ namespace tf2_bot_detector
 
 			std::string m_RandomRCONPassword;
 			uint16_t m_RandomRCONPort;
+			std::string m_ManualRCONPassword;
+			uint16_t m_ManualRCONPort = 27015;
 			bool m_RCONSuccess = false;
 			std::optional<RCONClientData> m_TestRCONClient;
 

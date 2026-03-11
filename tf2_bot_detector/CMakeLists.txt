@@ -32,7 +32,9 @@ set_target_properties(tf2_bot_detector PROPERTIES
 	VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/staging"
 )
 
-target_compile_definitions(tf2_bot_detector PRIVATE WIN32_LEAN_AND_MEAN)
+if (WIN32)
+	target_compile_definitions(tf2_bot_detector PRIVATE WIN32_LEAN_AND_MEAN)
+endif()
 target_include_directories(tf2_bot_detector PRIVATE
 	"."
 	"${CMAKE_CURRENT_BINARY_DIR}"
@@ -188,6 +190,16 @@ if(WIN32)
 		"Platform/Windows/PlatformInstall.cpp"
 		"Platform/Windows/Platform.cpp"
 	)
+else()
+	target_sources(tf2_bot_detector PRIVATE
+		"Platform/Linux/Processes.cpp"
+		"Platform/Linux/Shell.cpp"
+		"Platform/Linux/Steam.cpp"
+		"Platform/Linux/Linux.cpp"
+		"Platform/Linux/PlatformInstall.cpp"
+		"Platform/Linux/Platform.cpp"
+	)
+	target_link_libraries(tf2_bot_detector PRIVATE dl pthread)
 endif()
 
 if (TF2BD_ENABLE_DISCORD_INTEGRATION)

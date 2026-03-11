@@ -11,8 +11,12 @@ using namespace gl21;
 #elif IMGUI_USE_GLAD2
 #include <glad/gl.h>
 #else
+#ifdef _WIN32
 #include <Windows.h>
 #include <gl/GL.h>
+#else
+#include <GL/gl.h>
+#endif
 #endif
 #include <mh/concurrency/thread_sentinel.hpp>
 #include <mh/memory/unique_object.hpp>
