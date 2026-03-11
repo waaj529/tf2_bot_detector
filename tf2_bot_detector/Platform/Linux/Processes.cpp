@@ -3,6 +3,8 @@
 
 #include <mh/coroutine/future.hpp>
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -10,6 +12,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <sstream>
 
 using namespace std::string_literals;
@@ -59,6 +62,42 @@ namespace
 		}
 
 		return processes;
+	}
+
+	bool LaunchProcessDetached(const std::filesystem::path& executable, const std::vector<std::string>& args)
+	{
+		std::vector<std::string> argvStorage;
+		argvStorage.reserve(args.size() + 1);
+		argvStorage.emplace_back(executable.string());
+		for (const auto& arg : args)
+			argvStorage.push_back(arg);
+
+		std::vector<char*> argv;
+		argv.reserve(argvStorage.size() + 1);
+		for (auto& arg : argvStorage)
+			argv.push_back(arg.data());
+		argv.push_back(nullptr);
+
+		const auto pid = fork();
+		if (pid < 0)
+			return false;
+
+		if (pid == 0)
+		{
+			const auto grandChild = fork();
+			if (grandChild == 0)
+			{
+				execvp(argv.front(), argv.data());
+				_exit(127);
+			}
+
+			_exit(grandChild < 0 ? 127 : 0);
+		}
+
+		int status = 0;
+		(void)waitpid(pid, &status, 0);
+
+		return true;
 	}
 }
 
@@ -124,25 +163,16 @@ void tf2_bot_detector::Processes::RequireTF2NotRunning()
 void tf2_bot_detector::Processes::Launch(const std::filesystem::path& executable,
 	const std::vector<std::string>& args, bool elevated)
 {
-	std::string cmdLine;
-	for (const auto& arg : args)
-		cmdLine << '"' << arg << '"' << ' ';
-
-	Launch(executable, cmdLine, elevated);
+	(void)elevated;
+	if (!LaunchProcessDetached(executable, args))
+		LogError(MH_SOURCE_LOCATION_CURRENT(), "Failed to launch {}", executable);
 }
 
 void tf2_bot_detector::Processes::Launch(const std::filesystem::path& executable,
 	const std::string_view& args, bool elevated)
 {
-	(void)elevated;
-	std::string command = '"' + executable.string() + '"';
-	if (!args.empty())
-	{
-		command += ' ';
-		command += args;
-	}
-
-	if (std::system(command.c_str()) != 0)
+	auto splitArgs = Shell::SplitCommandLineArgs(args);
+	if (!LaunchProcessDetached(executable, splitArgs))
 		LogError(MH_SOURCE_LOCATION_CURRENT(), "Failed to launch {}", executable);
 }
 

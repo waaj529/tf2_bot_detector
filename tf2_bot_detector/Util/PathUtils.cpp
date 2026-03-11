@@ -6,8 +6,11 @@
 #include <mh/text/string_insertion.hpp>
 #include <vdf_parser.hpp>
 
+#include <cctype>
+#include <fstream>
 #include <iomanip>
 #include <string>
+#include <unordered_set>
 
 using namespace std::chrono_literals;
 using namespace std::string_literals;
@@ -166,7 +169,9 @@ mh::generator<std::filesystem::path> tf2_bot_detector::GetSteamLibraryFolders(co
 	const auto baseSteamAppsDir = steamDir / "steamapps";
 	if (std::filesystem::exists(baseSteamAppsDir))
 	{
+		std::unordered_set<std::string> yielded;
 		co_yield baseSteamAppsDir;
+		yielded.insert(baseSteamAppsDir.lexically_normal().string());
 
 		const auto libraryFoldersFilename = baseSteamAppsDir / "libraryfolders.vdf";
 		if (!std::filesystem::exists(libraryFoldersFilename))
@@ -183,12 +188,40 @@ mh::generator<std::filesystem::path> tf2_bot_detector::GetSteamLibraryFolders(co
 		}
 
 		auto vdf = tyti::vdf::read(file);
+
+		// Legacy format: numbered entries in attribs map directly to library paths.
 		for (const auto& attrib : vdf.attribs)
 		{
-			if (!std::all_of(attrib.first.begin(), attrib.first.end(), [](char c) { return isdigit(c); }))
+			if (!std::all_of(attrib.first.begin(), attrib.first.end(), [](unsigned char c) { return std::isdigit(c) != 0; }))
 				continue;
 
-			co_yield std::filesystem::path(attrib.second) / "steamapps";
+			if (attrib.second.empty())
+				continue;
+
+			const auto libraryPath = std::filesystem::path(attrib.second) / "steamapps";
+			if (!yielded.insert(libraryPath.lexically_normal().string()).second)
+				continue;
+
+			co_yield libraryPath;
+		}
+
+		// Modern format: numbered children contain a "path" attribute.
+		for (const auto& [childName, child] : vdf.childs)
+		{
+			if (!std::all_of(childName.begin(), childName.end(), [](unsigned char c) { return std::isdigit(c) != 0; }))
+				continue;
+			if (!child)
+				continue;
+
+			auto pathIt = child->attribs.find("path");
+			if (pathIt == child->attribs.end() || pathIt->second.empty())
+				continue;
+
+			const auto libraryPath = std::filesystem::path(pathIt->second) / "steamapps";
+			if (!yielded.insert(libraryPath.lexically_normal().string()).second)
+				continue;
+
+			co_yield libraryPath;
 		}
 	}
 }

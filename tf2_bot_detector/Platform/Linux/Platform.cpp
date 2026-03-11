@@ -56,7 +56,7 @@ bool tf2_bot_detector::Platform::IsDebuggerAttached()
 
 bool tf2_bot_detector::Platform::IsPortAvailable(uint16_t port)
 {
-	const int socketFD = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	const int socketFD = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (socketFD < 0)
 		return false;
 

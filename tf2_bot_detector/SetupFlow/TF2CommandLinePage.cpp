@@ -516,6 +516,7 @@ void TF2CommandLinePage::Init(const InitState& is)
 void TF2CommandLinePage::Commit(const CommitState& cs)
 {
 	m_IsAutoLaunchAllowed = false;
-	cs.m_Settings.m_Unsaved.m_RCONClient = std::move(m_Data.m_TestRCONClient.value().m_Client);
+	if (m_Data.m_TestRCONClient)
+		cs.m_Settings.m_Unsaved.m_RCONClient = std::move(m_Data.m_TestRCONClient->m_Client);
 	m_Data.m_TestRCONClient.reset();
 }

@@ -163,6 +163,7 @@ Texture::Texture(const TextureManager& manager, const Bitmap& bitmap, const Text
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, bitmap.GetWidth(), bitmap.GetHeight(), 0,
 		sourceFormat, sourceType, bitmap.GetData());
 
+#if IMGUI_USE_GLAD2
 	if (GLAD_GL_ARB_texture_swizzle)
 	{
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle.data());
@@ -171,6 +172,16 @@ Texture::Texture(const TextureManager& manager, const Bitmap& bitmap, const Text
 	{
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA_EXT, swizzle.data());
 	}
+#elif IMGUI_USE_GLBINDING
+	if (manager.HasExtension(GLextension::GL_ARB_texture_swizzle))
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle.data());
+	else if (manager.HasExtension(GLextension::GL_EXT_texture_swizzle))
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA_EXT, swizzle.data());
+#else
+#ifdef GL_TEXTURE_SWIZZLE_RGBA
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle.data());
+#endif
+#endif
 
 #if 0
 	if (glGenerateMipmap)

@@ -1,8 +1,58 @@
 #include "../Platform.h"
 
+#include <vdf_parser.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <optional>
+
+namespace
+{
+	std::optional<tf2_bot_detector::SteamID> TryReadMostRecentSteamID(const std::filesystem::path& steamDir)
+	{
+		const auto loginUsersPath = steamDir / "config" / "loginusers.vdf";
+		if (!std::filesystem::exists(loginUsersPath))
+			return std::nullopt;
+
+		std::ifstream file(loginUsersPath);
+		if (!file.good())
+			return std::nullopt;
+
+		auto root = tyti::vdf::read(file);
+
+		std::shared_ptr<tyti::vdf::object> users;
+		if (auto it = root.childs.find("users"); it != root.childs.end())
+			users = it->second;
+		else if (auto it = root.childs.find("Users"); it != root.childs.end())
+			users = it->second;
+
+		if (!users)
+			return std::nullopt;
+
+		for (const auto& [steamIDStr, userInfo] : users->childs)
+		{
+			if (!userInfo)
+				continue;
+
+			const auto mostRecent = userInfo->attribs.find("MostRecent");
+			if (mostRecent == userInfo->attribs.end() || mostRecent->second != "1")
+				continue;
+
+			try
+			{
+				return tf2_bot_detector::SteamID(std::stoull(steamIDStr));
+			}
+			catch (const std::exception&)
+			{
+				continue;
+			}
+		}
+
+		return std::nullopt;
+	}
+}
 
 using namespace tf2_bot_detector;
 
@@ -44,9 +94,14 @@ SteamID tf2_bot_detector::Platform::GetCurrentActiveSteamID()
 	if (steamDir.empty())
 		return {};
 
+	if (const auto mostRecent = TryReadMostRecentSteamID(steamDir); mostRecent.has_value())
+		return *mostRecent;
+
 	const auto userdataDir = steamDir / "userdata";
 	if (!std::filesystem::exists(userdataDir))
 		return {};
+
+	std::optional<std::pair<std::filesystem::file_time_type, SteamID>> fallbackResult;
 
 	for (const auto& entry : std::filesystem::directory_iterator(userdataDir))
 	{
@@ -60,13 +115,19 @@ SteamID tf2_bot_detector::Platform::GetCurrentActiveSteamID()
 		try
 		{
 			const auto accountID = static_cast<uint32_t>(std::stoull(dirname));
-			return SteamID(accountID, SteamAccountType::Individual, SteamAccountUniverse::Public);
+			const auto lastWriteTime = std::filesystem::last_write_time(entry.path());
+			auto steamID = SteamID(accountID, SteamAccountType::Individual, SteamAccountUniverse::Public);
+			if (!fallbackResult || lastWriteTime > fallbackResult->first)
+				fallbackResult = std::make_pair(lastWriteTime, steamID);
 		}
 		catch (const std::exception&)
 		{
 			continue;
 		}
 	}
+
+	if (fallbackResult)
+		return fallbackResult->second;
 
 	return {};
 }
