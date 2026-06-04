@@ -41,7 +41,7 @@
 </p>
 
 <!-- TABLE OF CONTENTS -->
-## Table of Contents
+## Table of Con
 
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
