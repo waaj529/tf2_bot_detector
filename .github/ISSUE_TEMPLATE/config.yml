@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discord Community Support
+    url: https://discord.gg/W8ZSh3Z
+    about: Join the official Discord server for real-time support and community help with TF2 Bot Detector.
+  - name: Official Wiki & Documentation
+    url: https://github.com/PazerOP/tf2_bot_detector/wiki
+    about: Read the official documentation for help with installation, customisation, and troubleshooting.

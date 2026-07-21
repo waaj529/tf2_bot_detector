@@ -1,0 +1,47 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'bug'
+      - 'fix'
+  - title: '⚙️ Build System & CI'
+    labels:
+      - 'Build System'
+      - 'CI/CD'
+  - title: '📦 Dependency Updates'
+    labels:
+      - 'dependencies'
+  - title: '🧹 Refactoring & Maintenance'
+    labels:
+      - 'refactoring'
+      - 'cleanup'
+      - 'Submodules'
+
+change-template: '- $TITLE (#$NUMBER) by @$AUTHOR'
+template: |
+  ## Changelog
+  
+  $CHANGES
+
+# Automate version bumping based on pull request labels
+version-resolver:
+  major:
+    labels:
+      - 'major'
+      - 'breaking-change'
+  minor:
+    labels:
+      - 'minor'
+      - 'feature'
+  patch:
+    labels:
+      - 'patch'
+      - 'bug'
+      - 'fix'
+      - 'dependencies'
+  default: patch

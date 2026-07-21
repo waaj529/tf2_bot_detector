@@ -1,0 +1,47 @@
+# Configuration for actions/labeler
+
+"Component: App":
+  - changed-files:
+    - any-glob-to-any-file: 'tf2_bot_detector/**/*'
+
+"Component: Common":
+  - changed-files:
+    - any-glob-to-any-file: 'tf2_bot_detector_common/**/*'
+
+"Component: Updater":
+  - changed-files:
+    - any-glob-to-any-file: 'tf2_bot_detector_updater/**/*'
+
+"Component: WinRT":
+  - changed-files:
+    - any-glob-to-any-file: 'tf2_bot_detector_winrt/**/*'
+
+"Component: MSIX":
+  - changed-files:
+    - any-glob-to-any-file: 'msix/**/*'
+
+"Component: Schemas":
+  - changed-files:
+    - any-glob-to-any-file: 'schemas/**/*'
+
+"Component: Configuration":
+  - changed-files:
+    - any-glob-to-any-file: 'staging/**/*'
+
+"Build System":
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'cmake/**/*'
+      - 'CMakeLists.txt'
+      - 'vcpkg.json'
+      - 'CMakeSettings.json'
+
+"Submodules":
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'submodules/**/*'
+      - '.gitmodules'
+
+"CI/CD":
+  - changed-files:
+    - any-glob-to-any-file: '.github/workflows/**/*'
